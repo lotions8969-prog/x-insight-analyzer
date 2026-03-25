@@ -58,14 +58,22 @@ export default function DashboardPage() {
     setLoading(true)
     setError(null)
     try {
-      const endpoint = demo
-        ? `/api/analytics/demo?range=${range}`
-        : `/api/analytics/summary?range=${range}`
-      const res = await fetch(endpoint)
+      // まずリアルデータを試み、失敗したら自動でデモにフォールバック
+      if (!demo) {
+        const res = await fetch(`/api/analytics/summary?range=${range}`)
+        if (res.ok) {
+          const json = await res.json()
+          setData(json)
+          setIsDemo(false)
+          return
+        }
+        // 失敗したらデモにフォールバック（エラー表示なし）
+      }
+      const res = await fetch(`/api/analytics/demo?range=${range}`)
       if (!res.ok) throw new Error("データ取得に失敗しました")
       const json = await res.json()
       setData(json)
-      setIsDemo(!!json.isDemo)
+      setIsDemo(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : "エラーが発生しました")
     } finally {
@@ -74,8 +82,7 @@ export default function DashboardPage() {
   }, [range])
 
   useEffect(() => {
-    // Try real data first, fall back to demo
-    fetchData(false).catch(() => fetchData(true))
+    fetchData(false)
   }, [fetchData])
 
   async function syncData() {
