@@ -14,19 +14,24 @@ if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
   )
 }
 
-// デモログイン (APIキー不要・常に有効)
+// XのIDを入力してログイン（APIキー不要）
 providers.push(
   Credentials({
-    id: "demo",
-    name: "Demo",
-    credentials: {},
-    async authorize() {
+    id: "twitter-handle",
+    name: "Twitter Handle",
+    credentials: {
+      handle: { label: "X ID", type: "text" },
+    },
+    async authorize(credentials) {
+      const raw = (credentials?.handle as string | undefined) ?? ""
+      const handle = raw.replace(/^@/, "").trim()
+      if (!handle) return null
       return {
-        id: "demo-user",
-        name: "デモユーザー",
-        email: "demo@x-insight.local",
+        id: `handle:${handle}`,
+        name: `@${handle}`,
+        email: `${handle}@x-insight.local`,
         image: null,
-        isDemo: true,
+        twitterHandle: handle,
       }
     },
   })
@@ -39,7 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
-        token.isDemo = (user as { isDemo?: boolean }).isDemo ?? false
+        token.twitterHandle = (user as { twitterHandle?: string }).twitterHandle ?? null
       }
       if (account?.access_token) {
         token.accessToken = account.access_token
@@ -49,7 +54,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
-        ;(session as { isDemo?: boolean }).isDemo = token.isDemo as boolean
+        ;(session.user as { twitterHandle?: string | null }).twitterHandle =
+          token.twitterHandle as string | null
       }
       return session
     },

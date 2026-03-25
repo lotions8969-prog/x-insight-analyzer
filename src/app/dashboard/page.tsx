@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useSession } from "next-auth/react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -47,6 +48,8 @@ const RANGES: { label: string; value: TimeRange }[] = [
 ]
 
 export default function DashboardPage() {
+  const { data: session } = useSession()
+  const twitterHandle = (session?.user as { twitterHandle?: string } | undefined)?.twitterHandle
   const [range, setRange] = useState<TimeRange>("30d")
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,9 +112,9 @@ export default function DashboardPage() {
               <TrendingUp className="h-4 w-4 text-white" />
             </div>
             <h1 className="text-base font-bold hidden sm:block">X-Insight Analyzer</h1>
-            {data?.user && (
-              <span className="text-sm text-zinc-400">
-                @{data.user.username}
+            {(twitterHandle || data?.user?.username) && (
+              <span className="text-sm text-zinc-400 font-medium">
+                @{twitterHandle ?? data?.user?.username}
               </span>
             )}
           </div>
