@@ -12,11 +12,16 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const handle = searchParams.get("handle")
-  const bearerToken = searchParams.get("token")
   const range = searchParams.get("range") ?? "30d"
 
-  if (!handle || !bearerToken) {
-    return NextResponse.json({ error: "handle and token required" }, { status: 400 })
+  // クエリパラメータ優先、なければ環境変数のBearer Tokenを使用
+  const bearerToken = searchParams.get("token") || process.env.TWITTER_BEARER_TOKEN || ""
+
+  if (!handle) {
+    return NextResponse.json({ error: "handle required" }, { status: 400 })
+  }
+  if (!bearerToken) {
+    return NextResponse.json({ error: "Bearer Token が設定されていません" }, { status: 400 })
   }
 
   const client = new TwitterClient({ accessToken: bearerToken })

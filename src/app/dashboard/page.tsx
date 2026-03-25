@@ -80,12 +80,12 @@ export default function DashboardPage() {
     setError(null)
     const t = token ?? savedToken
 
-    // Bearer Tokenとハンドルがあればリアルデータ
-    if (t && twitterHandle) {
+    // ハンドルがあればリアルデータを試みる（環境変数Tokenも自動使用）
+    if (twitterHandle) {
       try {
-        const res = await fetch(
-          `/api/analytics/real?handle=${twitterHandle}&token=${encodeURIComponent(t)}&range=${range}`
-        )
+        const params = new URLSearchParams({ handle: twitterHandle, range })
+        if (t) params.set("token", t)
+        const res = await fetch(`/api/analytics/real?${params}`)
         const json = await res.json()
         if (res.ok) {
           setData(json)
@@ -93,12 +93,17 @@ export default function DashboardPage() {
           setLoading(false)
           return
         }
-        setError(json.error ?? "データ取得に失敗しました")
+        // Token未設定の場合のみデモへフォールバック（エラー表示しない）
+        if (res.status !== 400) {
+          setError(json.error ?? "データ取得に失敗しました")
+          setLoading(false)
+          return
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "通信エラー")
+        setLoading(false)
+        return
       }
-      setLoading(false)
-      return
     }
 
     // フォールバック: デモデータ
