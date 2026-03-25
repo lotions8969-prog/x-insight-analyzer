@@ -25,7 +25,7 @@ type AnalyticsData = {
   isDemo?: boolean
   isReal?: boolean
   noImpressions?: boolean
-  user?: { name: string; username: string; followerCount: number; image?: string | null }
+  user?: { name: string; username: string; followerCount: number; followingCount?: number; tweetCount?: number; image?: string | null }
   summary: {
     totalTweets: number
     totalImpressions: number
