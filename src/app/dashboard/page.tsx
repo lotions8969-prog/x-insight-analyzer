@@ -14,7 +14,7 @@ import { TopTweetsList } from "@/components/dashboard/TopTweetsList"
 import { KeywordsCloud } from "@/components/dashboard/KeywordsCloud"
 import {
   Eye, Heart, TrendingUp, Users, RefreshCw, Clock, BarChart2,
-  AlertCircle
+  AlertCircle, LogOut
 } from "lucide-react"
 import { formatNumber, formatPercent } from "@/lib/analytics"
 import type { TimeRange, TweetAnalytics } from "@/types"
@@ -134,6 +134,11 @@ export default function DashboardPage() {
               <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "同期中..." : "同期"}
             </Button>
+            <form action="/api/auth/signout" method="POST">
+              <Button type="submit" size="sm" variant="ghost">
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </form>
           </div>
         </div>
       </div>
