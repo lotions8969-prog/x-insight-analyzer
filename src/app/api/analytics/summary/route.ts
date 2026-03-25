@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { tweetStore, followerStore } from "@/app/api/twitter/sync/route"
 import {
   computeDailyMetrics,
   computeHourlyActivity,
@@ -25,31 +25,12 @@ export async function GET(req: NextRequest) {
   else if (range === "90d") since.setDate(since.getDate() - 90)
   else since.setFullYear(2000)
 
-  const [dbTweets, snapshots] = await Promise.all([
-    prisma.tweet.findMany({
-      where: { userId, createdAt: { gte: since } },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.followerSnapshot.findMany({
-      where: { userId },
-      orderBy: { recordedAt: "asc" },
-      take: 90,
-    }),
-  ])
+  const stored = (tweetStore.get(userId) ?? []) as TweetAnalytics[]
+  const tweets = stored.filter((t) => new Date(t.createdAt) >= since)
 
-  const tweets: TweetAnalytics[] = dbTweets.map((t) => ({
-    id: t.id,
-    text: t.text,
-    createdAt: t.createdAt,
-    likeCount: t.likeCount,
-    retweetCount: t.retweetCount,
-    replyCount: t.replyCount,
-    quoteCount: t.quoteCount,
-    impressionCount: t.impressionCount,
-    bookmarkCount: t.bookmarkCount,
-    engagementRate: t.engagementRate,
-    totalEngagements: t.likeCount + t.retweetCount + t.replyCount + t.quoteCount,
-  }))
+  if (tweets.length === 0) {
+    return NextResponse.json({ error: "No data. Please sync first." }, { status: 404 })
+  }
 
   const daily = computeDailyMetrics(tweets)
   const hourly = computeHourlyActivity(tweets)
@@ -60,9 +41,14 @@ export async function GET(req: NextRequest) {
   const totalEngagements = tweets.reduce((s, t) => s + t.totalEngagements, 0)
   const avgEngagementRate = totalImpressions > 0 ? (totalEngagements / totalImpressions) * 100 : 0
 
+  const snapshots = (followerStore.get(userId) ?? []) as { date: string; followerCount: number; followingCount: number; tweetCount: number }[]
   const followerGrowth = snapshots.length >= 2
     ? snapshots[snapshots.length - 1].followerCount - snapshots[0].followerCount
     : 0
+
+  const topTweets = [...tweets]
+    .sort((a, b) => b.impressionCount - a.impressionCount)
+    .slice(0, 10)
 
   return NextResponse.json({
     summary: {
@@ -77,12 +63,7 @@ export async function GET(req: NextRequest) {
     daily,
     hourly,
     keywords,
-    followerTrend: snapshots.map((s) => ({
-      date: s.recordedAt.toISOString().split("T")[0],
-      followerCount: s.followerCount,
-      followingCount: s.followingCount,
-      tweetCount: s.tweetCount,
-    })),
-    topTweets: tweets.slice(0, 10),
+    followerTrend: snapshots,
+    topTweets,
   })
 }
