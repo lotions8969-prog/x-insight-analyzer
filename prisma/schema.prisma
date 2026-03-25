@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  twitterId     String?   @unique
+  twitterHandle String?
+  accounts      Account[]
+  sessions      Session[]
+  tweets        Tweet[]
+  snapshots     FollowerSnapshot[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Tweet {
+  id              String   @id
+  userId          String
+  text            String
+  createdAt       DateTime
+  fetchedAt       DateTime @default(now())
+  likeCount       Int      @default(0)
+  retweetCount    Int      @default(0)
+  replyCount      Int      @default(0)
+  quoteCount      Int      @default(0)
+  impressionCount Int      @default(0)
+  bookmarkCount   Int      @default(0)
+  engagementRate  Float    @default(0)
+  hasMedia        Boolean  @default(false)
+  mediaTypes      String?
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model FollowerSnapshot {
+  id             String   @id @default(cuid())
+  userId         String
+  followerCount  Int
+  followingCount Int
+  tweetCount     Int
+  recordedAt     DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
+}
