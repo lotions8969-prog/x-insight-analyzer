@@ -52,7 +52,7 @@ const RANGES: { label: string; value: TimeRange }[] = [
 const STORAGE_KEY = "x_bearer_token"
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const twitterHandle = (session?.user as { twitterHandle?: string } | undefined)?.twitterHandle
 
   const [range, setRange] = useState<TimeRange>("30d")
@@ -118,9 +118,11 @@ export default function DashboardPage() {
     setLoading(false)
   }, [range, savedToken, twitterHandle])
 
+  // セッション確定後にのみデータ取得（undefinedのままfetchしない）
   useEffect(() => {
+    if (sessionStatus === "loading") return
     fetchData()
-  }, [fetchData])
+  }, [fetchData, sessionStatus])
 
   async function applyToken() {
     if (!bearerToken.trim()) return
