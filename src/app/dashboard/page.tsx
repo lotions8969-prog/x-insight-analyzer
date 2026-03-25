@@ -93,12 +93,18 @@ export default function DashboardPage() {
           setLoading(false)
           return
         }
-        // Token未設定の場合のみデモへフォールバック（エラー表示しない）
-        if (res.status !== 400) {
+        // 401=Token無効、403=権限なし → エラー表示
+        if (res.status === 401 || res.status === 403) {
+          setError(json.error ?? "APIエラーが発生しました")
+          setLoading(false)
+          // デモデータも合わせて表示
+        } else if (res.status !== 400) {
+          // 400以外の予期しないエラー
           setError(json.error ?? "データ取得に失敗しました")
           setLoading(false)
           return
         }
+        // 400（Token未設定）の場合のみデモへフォールバック
       } catch (e) {
         setError(e instanceof Error ? e.message : "通信エラー")
         setLoading(false)
@@ -240,14 +246,21 @@ export default function DashboardPage() {
 
       <div className="mx-auto max-w-7xl px-4 py-5 space-y-5">
         {/* Status banner */}
-        {isDemo && !savedToken && (
+        {isDemo && (
           <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
             <AlertCircle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
+            <div className="text-sm space-y-2">
               <p className="font-semibold text-amber-300">現在はデモデータを表示しています</p>
-              <p className="text-amber-400/80 mt-0.5">
-                右上の「APIキー設定」から Bearer Token を入力すると、<strong>@{twitterHandle}</strong> の実際のツイートデータで分析できます。
+              <p className="text-amber-400/80">
+                実データを表示するには、有効な <strong>Bearer Token</strong> が必要です。
               </p>
+              <div className="bg-zinc-900 rounded-lg p-3 text-xs text-zinc-300 space-y-1">
+                <p className="font-semibold text-white">Bearer Token の再取得手順：</p>
+                <p>① <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">developer.twitter.com</a> を開く</p>
+                <p>② アプリを選択 → 「Keys and tokens」タブ</p>
+                <p>③ Bearer Token の「Regenerate」をクリックして新しいTokenをコピー</p>
+                <p>④ 右上「APIキー設定」に貼り付け</p>
+              </div>
             </div>
           </div>
         )}

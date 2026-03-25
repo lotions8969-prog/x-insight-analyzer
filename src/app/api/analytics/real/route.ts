@@ -33,7 +33,13 @@ export async function GET(req: NextRequest) {
       { headers: { Authorization: `Bearer ${bearerToken}` } }
     )
     if (!userRes.ok) {
-      const err = await userRes.json()
+      const err = await userRes.json().catch(() => ({}))
+      if (userRes.status === 401) {
+        return NextResponse.json({ error: "Bearer Token が無効です。Developer Portalで再発行してください。", code: "INVALID_TOKEN" }, { status: 401 })
+      }
+      if (userRes.status === 403) {
+        return NextResponse.json({ error: "APIアクセス権限がありません。Basic以上のプランが必要です。", code: "FORBIDDEN" }, { status: 403 })
+      }
       return NextResponse.json({ error: err?.detail ?? "ユーザーが見つかりません" }, { status: 400 })
     }
     const userData = await userRes.json()
